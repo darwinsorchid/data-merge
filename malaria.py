@@ -26,21 +26,34 @@ Output: .txt file with FASTA header with protein name + sequence (tab-separated 
 ┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅
 """
 
+import os
 import sys
 
+# Check arguments exist
+if len(sys.argv) < 4:
+    raise ValueError(f"Expected 3 arguments, got {len(sys.argv) - 1}.")
 
 input_fasta_path = sys.argv[1]
 input_blastx_path = sys.argv[2]
 output_file_path = sys.argv[3]
 
 
-print(f"Fasta file: {input_fasta_path}")
-print(f"BlastX file: {input_blastx_path}")
-print(f"Output_file: {output_file_path}")
+# Check if input file paths exist (e.g. misspelled file name or non-existent file in folder)
+if not os.path.isfile(input_blastx_path):
+    raise FileNotFoundError("BLASTX file not found.")
+
+if not os.path.isfile(input_fasta_path):
+    raise FileNotFoundError("FASTA file not found.")
+
+# Check for correct input file formats
+if not input_fasta_path.endswith(".fna"):
+    raise ValueError("Prove valid .fna file.")
+
+if not input_blastx_path.endswith(".blastx.tab"):
+    raise ValueError("Provide valid .blastx.tab file.")
 
 
 # Create BLASTX look-up ids
-
 blast_dict = {}
 
 with open(input_blastx_path, "r") as blast_in_file:
@@ -48,12 +61,10 @@ with open(input_blastx_path, "r") as blast_in_file:
     header = blast_in_file.readline()
     for line in blast_in_file:
         words = line.split("\t")
-        # print(words)
         id_key = words[0]
         description = words[9].rstrip()
         blast_dict[id_key] = description
 
-# print(blast_dict)
 
 # Check if BLASTX dict is not empty
 if not blast_dict:
@@ -67,27 +78,26 @@ with (
     open(output_file_path, "w") as out_file,
 ):
     for line in fasta_in_file:
-        # print(line)
         if line.startswith(">"):
             new_words = []
             words = line.split("\t")
             clean_id = words[0].lstrip(">")
-            # print(clean_id)
             hit_description = blast_dict[clean_id]
-            # print(repr(hit_description))
-            if hit_description != "null":
+            if hit_description != "null" and hit_description is not None:
                 write_seq = True
                 new_words.append(line.rstrip())
                 new_words.append("protein=" + hit_description)
                 new_line = "\t".join(new_words)
                 print(new_line)
                 out_file.write(new_line + "\n")
-            else:
+            elif hit_description == "null":
                 write_seq = False
+            elif hit_description is None:
+                raise KeyError("Sequence ID does not exist in BLASTX file.")
 
         else:
             if write_seq:
-                print(line)
+                print(line.rstrip())
                 out_file.write(line)
             else:
                 continue
