@@ -47,11 +47,10 @@ with open(input_blastx_path, "r") as blast_in_file:
     # Exclude header
     header = blast_in_file.readline()
     for line in blast_in_file:
-        line.rstrip()
         words = line.split("\t")
         # print(words)
         id_key = words[0]
-        description = words[9]
+        description = words[9].rstrip()
         blast_dict[id_key] = description
 
 # print(blast_dict)
@@ -60,6 +59,7 @@ with open(input_blastx_path, "r") as blast_in_file:
 if not blast_dict:
     raise ValueError("Parsing BLASTX file resulted in an empty dictionary.")
 
+write_seq = False
 
 # Parse FASTA and look for matches in BLASTX
 with (
@@ -74,13 +74,20 @@ with (
             clean_id = words[0].lstrip(">")
             # print(clean_id)
             hit_description = blast_dict[clean_id]
-
-            new_words.append(line.rstrip())
-            new_words.append("protein=" + hit_description)
-            new_line = "\t".join(new_words)
-            print(new_line)
-            out_file.write(new_line + "\n")
+            # print(repr(hit_description))
+            if hit_description != "null":
+                write_seq = True
+                new_words.append(line.rstrip())
+                new_words.append("protein=" + hit_description)
+                new_line = "\t".join(new_words)
+                print(new_line)
+                out_file.write(new_line + "\n")
+            else:
+                write_seq = False
 
         else:
-            print(line)
-            out_file.write(line)
+            if write_seq:
+                print(line)
+                out_file.write(line)
+            else:
+                continue
