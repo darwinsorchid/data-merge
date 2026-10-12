@@ -9,7 +9,6 @@ Description: This program merges information from a BLASTX and a FASTA file into
             output format (printed and saved as a file) follows the given FASTA file and the protein descri-
             ption information is added to the header of each entry. Sequences for which protein description
             is "null" are excluded from the final output.
-            sys.exit() is used instead of raise <Error> so as not to be considered crushing
 
 
 User-defined functions: None
@@ -51,6 +50,7 @@ import sys
 
 # Check that correct number of arguments exist
 if len(sys.argv) != 4:
+    # Exit with a readable error message instead of a Python traceback
     sys.exit(f"Expected 3 arguments, got {len(sys.argv) - 1}.")
 
 # Assign user-defined input and output file paths to variables for downstream use
